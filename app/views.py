@@ -5,7 +5,7 @@ import requests
 from bs4 import BeautifulSoup
 from django.core.management.base import BaseCommand
 from app.models import Product,SelectedProducts,Add_to_Cart
-from pandas.tests.io import json
+import json
 from django.http.response import JsonResponse
 
 
