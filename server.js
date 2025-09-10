@@ -9,9 +9,9 @@ app.use(exp.json());
 // Enable CORS so React (different port) can access this API
 app.use(cors());
 const PORT = process.env.PORT || 4000;
-const Products = require("../useModels/Product.js"); // Your Mongoose model
-const selectedProducts = require("../useModels/selectedProducts.js"); // Your Mongoose model
-const CartProducts = require("../useModels/ShoppingCart.js"); // Your Mongoose model
+const Products = require("./useModels/Product.js"); // Your Mongoose model
+const selectedProducts = require("./useModels/selectedProducts.js"); // Your Mongoose model
+const CartProducts = require("./useModels/ShoppingCart.js"); // Your Mongoose model
 
 app.get("/products", async (req, res) => {
   const data = await Products.find(); // Fetch all documents from MongoDB
