@@ -1,15 +1,11 @@
 
 const mg=require("mongoose")
-MONGO_URI="mongodb+srv://Shailesh:ShaileshMongo@cluster0.lfsstwz.mongodb.net/"
-const mongoURI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/my_mongo_db";
+const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://Shailesh:ShaileshMongo@cluster0.lfsstwz.mongodb.net/BuildMyPC?retryWrites=true&w=majority";
 
-mg.connect(mongoURI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log("✅ Connected to MongoDB"))
-.catch(err => console.error("❌ MongoDB connection error:", err));
-
+// Connect to MongoDB
+mongoose.connect(MONGO_URI)
+  .then(() => console.log("✅ Connected to MongoDB Atlas"))
+  .catch(err => console.error("❌ MongoDB connection error:", err));
 
 
 const CartSchema=mg.Schema({
