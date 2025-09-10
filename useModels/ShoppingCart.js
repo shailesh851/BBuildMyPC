@@ -1,7 +1,16 @@
 
 const mg=require("mongoose")
-mg.connect("mongodb://127.0.0.1:27017/my_mongo_db").then(()=>
-  console.log("connected")).catch((error)=>console.log(error))
+MONGO_URI="mongodb+srv://Shailesh:ShaileshMongo@cluster0.lfsstwz.mongodb.net/"
+const mongoURI = process.env.MONGO_URI || "mongodb://127.0.0.1:27017/my_mongo_db";
+
+mg.connect(mongoURI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true,
+})
+.then(() => console.log("✅ Connected to MongoDB"))
+.catch(err => console.error("❌ MongoDB connection error:", err));
+
+
 
 const CartSchema=mg.Schema({
     title:String,
