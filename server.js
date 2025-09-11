@@ -117,6 +117,28 @@ app.post("/addCart", async (req, res) => {
   }
 });
 
+const GEMINI_API_KEY = "AIzaSyC_kkvcGYVFqyCREx3znFV2y2UNp6FoCEg"; // keep in env variable
+
+app.post("/chat", async (req, res) => {
+  const { prompt } = req.body;
+
+  try {
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+      {
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+      },
+      {
+        headers: { "Content-Type": "application/json" },
+      }
+    );
+
+    res.json({ reply: response.data.candidates[0].content.parts[0].text });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.listen(PORT, () => {
   console.log(`✅ Server is running on port ${PORT}`);
 });

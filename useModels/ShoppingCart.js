@@ -1,6 +1,6 @@
 
 const mg=require("mongoose")
-const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://mongo:mongo123@clusterone.ngbqtlh.mongodb.net/my_mongo_db?retryWrites=true&w=majority";
+const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://mongo:mongo123@clusterone.ngbqtlh.mongodb.net/my_mongo_db?retryWrites=true&w=majority"
 
 // Connect to MongoDB
 mg.connect(MONGO_URI)
