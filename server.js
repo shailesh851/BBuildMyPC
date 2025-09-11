@@ -117,10 +117,15 @@ app.post("/addCart", async (req, res) => {
   }
 });
 
-const GEMINI_API_KEY = "AIzaSyC_kkvcGYVFqyCREx3znFV2y2UNp6FoCEg"; // keep in env variable
+ // keep in env variable
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
 app.post("/chat", async (req, res) => {
   const { prompt } = req.body;
+  console.log(prompt)
+  if (!prompt) {
+    return res.status(400).json({ error: "Prompt is required" });
+  }
 
   try {
     const response = await axios.post(
@@ -133,11 +138,21 @@ app.post("/chat", async (req, res) => {
       }
     );
 
-    res.json({ reply: response.data.candidates[0].content.parts[0].text });
+    // ✅ Ensure Gemini gave us a valid candidate
+    const reply =
+      response.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
+      "⚠️ No response from Gemini";
+
+    res.json({ reply });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    console.error("Gemini API error:", error.response?.data || error.message);
+    res
+      .status(500)
+      .json({ error: error.response?.data || error.message });
   }
 });
+
+
 
 app.listen(PORT, () => {
   console.log(`✅ Server is running on port ${PORT}`);
