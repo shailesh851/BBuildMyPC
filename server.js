@@ -9,12 +9,12 @@ app.use(exp.json());
 // Enable CORS so React (different port) can access this API
 app.use(cors());
 const PORT = process.env.PORT || 4000;
-const Products = require("./useModels/Product.js"); // Your Mongoose model
+const Product = require("./useModels/Product.js"); // Your Mongoose model
 const selectedProducts = require("./useModels/selectedProducts.js"); // Your Mongoose model
-const CartProducts = require("./useModels/ShoppingCart.js"); // Your Mongoose model
+const CartProduct = require("./useModels/ShoppingCart.js"); // Your Mongoose model
 
 app.get("/products", async (req, res) => {
-  const data = await Products.find(); // Fetch all documents from MongoDB
+  const data = await Product.find(); // Fetch all documents from MongoDB
   res.json(data);                  // Send JSON response
 });
 
@@ -72,7 +72,7 @@ app.post("/addToCart",async(req,res)=>{
         return obj;
         
     });
-    await CartProducts.insertMany(docsToInsert);
+    await CartProduct.insertMany(docsToInsert);
     }
     else if(req.body.status_msg==="REMOVE"){
         const deletedProducts=await selectedProducts.deleteMany({})
@@ -83,7 +83,7 @@ app.post("/addToCart",async(req,res)=>{
 })
 
 app.get("/getCartproducts", async (req, res) => {
-  const CartData = await CartProducts.find(); // Fetch all documents from MongoDB
+  const CartData = await CartProduct.find(); // Fetch all documents from MongoDB
   res.json(CartData);                  // Send JSON response
 });
 
@@ -95,7 +95,7 @@ app.delete("/removeCart", async (req, res) => {
       return res.status(400).json({ error: "Product ID required" });
     }
 
-    const result = await CartProducts.deleteOne({ _id: _id });
+    const result = await CartProduct.deleteOne({ _id: _id });
 
     if (result.deletedCount > 0) {
       res.status(200).json({ message: "Product removed successfully" });
@@ -109,7 +109,7 @@ app.delete("/removeCart", async (req, res) => {
 
 app.post("/addCart", async (req, res) => {
   try {
-    const cartProduct = new CartProducts(req.body); // create new product
+    const cartProduct = new CartProduct(req.body); // create new product
     await cartProduct.save(); // save to DB
     res.status(201).json({ message: "Product added to cart", data: cartProduct });
   } catch (err) {

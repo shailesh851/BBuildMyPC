@@ -18,5 +18,5 @@ const userSchema=mg.Schema({
 },{
   collection:"BuildMyPC"
 })
-const Products=mg.model("Products",userSchema)
-module.exports=Products
+const Product=mg.model("Product",userSchema)
+module.exports=Product

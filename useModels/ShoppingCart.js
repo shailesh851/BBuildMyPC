@@ -18,5 +18,5 @@ const CartSchema=mg.Schema({
 },{
   collection:"ShoppingCart",
 })
-const CartProducts=mg.model("CartProducts",CartSchema)
-module.exports=CartProducts
+const CartProduct=mg.model("CartProduct",CartSchema)
+module.exports=CartProduct
