@@ -78,7 +78,7 @@ app.post("/addToCart",async(req,res)=>{
         const deletedProducts=await selectedProducts.deleteMany({})
     }
 
-        // Refresh the page
+      
 
 })
 
