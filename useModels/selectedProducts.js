@@ -1,6 +1,6 @@
 
 const mg=require("mongoose")
-const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://Shailesh:ShaileshMongo@cluster0.lfsstwz.mongodb.net/BuildMyPC?retryWrites=true&w=majority";
+const MONGO_URI = process.env.MONGO_URI || "mongodb+srv://Shailesh:ShaileshMongo@cluster0.lfsstwz.mongodb.net/my_mongo_db?retryWrites=true&w=majority";
 
 // Connect to MongoDB
 mg.connect(MONGO_URI)
@@ -18,5 +18,5 @@ const selectSchema=mg.Schema({
 },{
   collection:"SelectedProducts",
 })
-const select=mg.model("select",selectSchema)
-module.exports=select
+const selectedProducts=mg.model("selectedProducts",selectSchema)
+module.exports=selectedProducts
