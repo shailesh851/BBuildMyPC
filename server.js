@@ -1,17 +1,22 @@
 
 
 
-
+const axios = require("axios");
 const exp = require("express");
 const app = exp();
 const cors = require("cors");
 app.use(exp.json());
+const dotenv =require("dotenv");
+dotenv.config();
 // Enable CORS so React (different port) can access this API
 app.use(cors());
 const PORT = process.env.PORT || 4000;
 const Product = require("./useModels/Product.js"); // Your Mongoose model
 const selectedProducts = require("./useModels/selectedProducts.js"); // Your Mongoose model
 const CartProduct = require("./useModels/ShoppingCart.js"); // Your Mongoose model
+const SignUp = require("./useModels/SignUp.js"); // Your Mongoose model
+const Login = require("./useModels/Login.js"); // Your Mongoose model
+const LoginUserProducts = require("./useModels/LoginUserProducts.js"); // Your Mongoose model
 
 app.get("/products", async (req, res) => {
   const data = await Product.find(); // Fetch all documents from MongoDB
@@ -84,7 +89,7 @@ app.post("/addToCart",async(req,res)=>{
 
 app.get("/getCartproducts", async (req, res) => {
   const CartData = await CartProduct.find(); // Fetch all documents from MongoDB
-  res.json(CartData);                  // Send JSON response
+  res.json(CartData);               // Send JSON response
 });
 
 // In Express.js
@@ -119,26 +124,26 @@ app.post("/addCart", async (req, res) => {
 
  // keep in env variable
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-
 app.post("/chat", async (req, res) => {
-  const { prompt } = req.body;
-  console.log(prompt)
-  if (!prompt) {
-    return res.status(400).json({ error: "Prompt is required" });
+  const { conversation } = req.body; // an array of messages
+
+  if (!conversation || !conversation.length) {
+    return res.status(400).json({ error: "Conversation is required" });
   }
 
   try {
-    const response = await axios.post(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
-      {
-        contents: [{ role: "user", parts: [{ text: prompt }] }],
-      },
-      {
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    // Convert conversation into Gemini format
+    const contents = conversation.map(msg => ({
+      role: msg.sender === "user" ? "user" : "assistant",
+      parts: [{ text: msg.text }]
+    }));
 
-    // ✅ Ensure Gemini gave us a valid candidate
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${GEMINI_API_KEY}`,
+      { contents },
+      { headers: { "Content-Type": "application/json" } }
+    );
+  
     const reply =
       response.data?.candidates?.[0]?.content?.parts?.[0]?.text ||
       "⚠️ No response from Gemini";
@@ -146,11 +151,321 @@ app.post("/chat", async (req, res) => {
     res.json({ reply });
   } catch (error) {
     console.error("Gemini API error:", error.response?.data || error.message);
-    res
-      .status(500)
-      .json({ error: error.response?.data || error.message });
+    res.status(500).json({ error: error.response?.data || error.message });
   }
 });
+
+app.post("/signup", async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({ message: "Please fill all details" });
+    }
+
+    // Check if user already exists
+    const existingUser = await SignUp.findOne({ Email: email });
+    if (existingUser) {
+      return res.status(400).json({ message: "User already registered" });
+    }
+
+    // Insert new user
+    const newUser = new SignUp({
+      UserName: name,
+      Email: email,
+      Password: password,
+    });
+
+    await newUser.save();
+
+    const newUser1 = new Login({
+      UserName: name,
+      Email: email,
+      Password: password,
+    });
+
+    await newUser1.save();
+
+    return res.status(201).json({ message: "Signup successful", user: newUser });
+  } catch (error) {
+    console.error("❌ Error in signup:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+// Login
+app.post("/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    if (!email || !password) {
+      return res.status(400).json({ message: "Please fill all details" });
+    }
+
+    // Check user exists
+    const user = await SignUp.findOne({ Email: email });
+    if (!user) {
+      return res.status(400).json({ message: "User not found" });
+    }
+
+    // Check password
+    if (user.Password !== password) {
+      return res.status(400).json({ message: "Invalid credentials" });
+    }
+
+    // Optional: log login history if needed
+    const NewUserLogin = new Login({ UserName: user.UserName, Email: user.Email,Password:user.Password });
+    await NewUserLogin.save();
+
+    return res.status(200).json({ message: "Login successful", user });
+  } catch (error) {
+    console.error("❌ Error in login:", error);
+    return res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.get("/logincheck", async (req, res) => {
+  try {
+    // ✅ Find the currently logged in user
+    const loggedUser = await Login.findOne(); // You can also use session/email from req if available
+
+    if (!loggedUser) {
+      return res.json({login:"exist", status: false, redirect: "/signup" });
+    }
+    else{
+      return res.json({login:"notexist"})
+    }
+
+    // ✅ Check in SignUp DB using the same email
+    const signUpUser = await SignUp.findOne({ Email: loggedUser.Email });
+
+    if (!signUpUser) {
+      return res.json({ status: false, redirect: "/signup" });
+    }
+
+    // ✅ Check if address fields are filled
+    const hasAddress =
+      signUpUser.City && signUpUser.State && signUpUser.Pincode && signUpUser.Phone;
+
+    if (!hasAddress) {
+      return res.json({
+        status: true,
+        addressFilled: false,
+        message: "notfilled",
+      });
+    }
+
+    return res.json({
+      status: true,
+      addressFilled: true,
+      message: "filled",
+    });
+  } catch (error) {
+    console.error("Error in /logincheck:", error);
+    return res.status(500).json({ status: false, message: "Server error" });
+  }
+});
+
+
+app.get("/logincheckProfile", async (req, res) => {
+  
+    // ✅ Find the currently logged in user
+    const loggedUser = await Login.findOne(); // You can also use session/email from req if available
+
+    if (loggedUser) {
+      return res.json({login:"exist"});
+    }
+  
+
+
+   
+
+    // ✅ Check if address fields are filled
+   
+});
+
+
+
+// address route
+app.post("/addressSave", async (req, res) => {
+  try {
+    const { city, state, pincode, phone } = req.body;
+    if (!city || !state || !pincode || !phone) {
+      return res.json({message: "Fill all address filed" });
+    }
+    // 🔹 Find the logged-in user in Login collection
+    const user = await Login.findOne()
+    
+
+
+    const updatedProduct = await SignUp.findOneAndUpdate(
+      { Email: user.Email },        // search by type
+      {
+        City:city,
+        State:state,
+        Pincode:pincode,
+        Phone:phone,
+      },              // new data to replace with
+      { new: true, upsert: true } // return updated doc, create if not found
+    );
+
+    return res.json({ success: true, message: "Address saved successfully!" });
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+app.get("/fatchProfileDetails", async (req, res) => {
+  try {
+    const user = await Login.findOne(); // latest logged in user
+    if (!user) {
+      return res.status(400).json({ message: "No user logged in" });
+    }
+
+    const userDetails = await SignUp.findOne({ Email: user.Email });
+    if (!userDetails) {
+      return res.status(404).json({ message: "User details not found" });
+    }
+
+    res.status(200).json(userDetails);
+  } catch (err) {
+    console.error("❌ Error in fetching profile details:", err);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+app.get("/logout", async (req, res) => {
+  try {
+    await Login.deleteMany({});  // ✅ सारे login records हटाएगा
+    res.status(200).json({ message: "Logout successful" });
+  } catch (err) {
+    console.error("❌ Error in logout:", err);
+    res.status(500).json({ message: "Server error during logout" });
+  }
+});
+
+app.post("/profileImage",async(req,res)=>{
+  const {url}=req.body
+  const userLog= await Login.findOne()
+  const updatedProduct = await SignUp.findOneAndUpdate(
+      { Email: userLog.Email },        // search by type
+      {
+        ImageURL:url
+      },              // new data to replace with
+      { new: true, upsert: true } // return updated doc, create if not found
+    );
+    return res.json({ success: true, message: "Address saved successfully!" });
+
+})
+
+  app.post("/loginProductsManage", async (req, res) => {
+  
+      // 1. Get logged in user (assuming only one is logged in at a time)
+      const LoginUser = await Login.findOne();
+      if (!LoginUser) {
+        return res.status(404).json({ error: "No logged in user found" });
+      }
+
+      const email = LoginUser.Email; // ✅ fix: no need to destructure
+
+      // 2. Delete all previous products for this user
+      await LoginUserProducts.deleteMany({ Email: email });
+
+      // 3. Fetch products from both collections
+      const SelectedProducts = await selectedProducts.find();
+      const cartProducts = await CartProduct.find();
+
+      // 4. Prepare new documents
+      const formattedSelected = SelectedProducts.map((item) => {
+      const obj = item.toObject();
+      delete obj._id; // remove original id
+      return {
+        Email: email,
+        ProductsPlace: "SelectedProducts",
+        ...obj
+      };
+    });
+
+    const formattedCart = cartProducts.map((item) => {
+      const obj = item.toObject();
+      delete obj._id; // remove original id
+      return {
+        Email: email,
+        ProductsPlace: "CartProducts",
+        ...obj
+      };
+    });
+
+      // 5. Insert new combined data
+      const allProducts = [...formattedSelected, ...formattedCart];
+      await LoginUserProducts.insertMany(allProducts);
+
+      return res.json({
+        message: "Products updated successfully on logout",
+        insertedCount: allProducts.length,
+      });
+
+    
+  });
+
+
+app.get("/prepareHistory", async (req, res) => {
+  try {
+    // 1. Find the logged-in user
+    const LoginUser = await Login.findOne();
+    if (!LoginUser) {
+      return res.status(404).json({ error: "No logged in user found" });
+    }
+
+    const email = LoginUser.Email;
+
+    // 2. Get this user's saved products from LoginUserProducts
+    const userProducts = await LoginUserProducts.find({ Email: email });
+
+    // 3. Separate products
+    const selectedToInsert = [];
+    const cartToInsert = [];
+
+    userProducts.forEach((item) => {
+      const obj = item.toObject();
+      delete obj._id;   // avoid duplicate key error
+      delete obj.Email; // not needed in original collection
+      delete obj.ProductsPlace;
+
+      if (item.ProductsPlace === "SelectedProducts") {
+        selectedToInsert.push(obj);
+      } else if (item.ProductsPlace === "CartProducts") {
+        cartToInsert.push(obj);
+      }
+    });
+
+    // 4. Clear old collections (optional: if you want to replace)
+    await selectedProducts.deleteMany({});
+    await CartProduct.deleteMany({});
+
+    // 5. Insert new ones
+    if (selectedToInsert.length > 0) {
+      await selectedProducts.insertMany(selectedToInsert);
+    }
+    if (cartToInsert.length > 0) {
+      await CartProduct.insertMany(cartToInsert);
+    }
+
+    return res.json({
+      message: "✅ History restored successfully",
+      selectedCount: selectedToInsert.length,
+      cartCount: cartToInsert.length,
+    });
+
+  } catch (error) {
+    console.error("Error in /prepareHistory:", error);
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
 
 
 
