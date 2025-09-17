@@ -13,10 +13,10 @@ app.use(cookieParser());
 const dotenv =require("dotenv");
 dotenv.config();
 
-app.use(cors({
-  origin: "https://bbuildmypc.onrender.com", 
-  credentials: true               
-}));
+  app.use(cors({
+    origin: "https://fbuildmypc.onrender.com/", 
+    credentials: true               
+  }));
 
 const PORT = process.env.PORT || 4000;
 const Product = require("./useModels/Product.js"); // Your Mongoose model
