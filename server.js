@@ -165,11 +165,12 @@ app.get("/get-csrf", (req, res) => {
   const csrfToken = require("crypto").randomBytes(24).toString("hex");
 
   // cookie set करना
-  res.cookie("csrftoken", csrfToken, {
-    httpOnly: false, // React frontend को access चाहिए
-    secure: false,   // HTTPS में true
-    sameSite: "Lax"
-  });
+res.cookie("csrftoken", csrfToken, {
+  httpOnly: true,   // JS से accessible नहीं
+  secure: true,     // सिर्फ HTTPS
+  sameSite: "Strict" // ज्यादा safe
+});
+
 
   res.json({ csrfToken });
 });
