@@ -264,12 +264,18 @@ app.get("/logincheck", async (req, res) => {
   try {
     // ✅ Find the currently logged in user
     //const loggedUser = await Login.findOne(); // You can also use session/email from req if available
-    console.log(req.cookies.UserName)
-    if (!req.cookies.UserName) {
-      return res.json({login:"notexist", status: false, redirect: "/signup" });
+    const user = await SignUp.findOne({ Email: email });
+    if (req.cookies.UserName) {
+      if(!user.City || !user.State ||!user.Pincode||!user.Phone){
+        return res.json({login:"notexist", status: false });
+      }
+      else{
+        return res.json({login:"exist",status:true})
+      }
+      
     }
     else{
-      return res.json({login:"exist"})
+      return res.json({status: false, redirect: "/signup" });
     }
 
 
