@@ -14,7 +14,8 @@ const dotenv =require("dotenv");
 dotenv.config();
 
 const allowedOrigins = [
-  "http://localhost:3000",     // local React
+  "http://localhost:3000",
+  "https://bbuildmypc.onrender.com",   // local React
   "https://fbuildmypc.onrender.com"  // live deployed React
 ];
 
@@ -191,7 +192,7 @@ res.cookie("csrftoken", csrfToken, {
 
 app.post("/signup", async (req, res) => {
   try {
-    const { name, email, password,csrfToken } = req.body;
+    const { name, email, password } = req.body;
 
     
 
@@ -213,15 +214,8 @@ app.post("/signup", async (req, res) => {
       });
 
       await newUser.save();
-
-      const newUser1 = new Login({
-        UserName: name,
-        Email: email,
-        Password: password,
-      });
-
-      await newUser1.save();
-
+    res.cookie("UserEmail", email, {httpOnly: true,secure: true,sameSite: "None", path: "/"});
+    res.cookie("UserName", user.UserName, {httpOnly: true,secure: true,sameSite: "None", path: "/"});
       return res.status(201).json({ message: "Signup successful", user: newUser });
         
     
@@ -369,7 +363,7 @@ app.get("/fatchProfileDetails", async (req, res) => {
 app.get("/logout", async (req, res) => {
   try {
 
-    await Login.deleteMany({});  // ✅ सारे login records हटाएगा
+
     res.clearCookie("UserName",{ path: "/", sameSite: "None", secure: true })
     res.clearCookie("UserEmail",{ path: "/", sameSite: "None", secure: true })
     res.status(200).json({ message: "Logout successful" });
