@@ -244,8 +244,8 @@ app.post("/login", async (req, res) => {
     // Optional: log login history if needed
     //const NewUserLogin = new Login({ UserName: user.UserName, Email: user.Email,Password:user.Password });
     //await NewUserLogin.save();
-    res.cookie("UserEmail", email, { httpOnly: false, sameSite: "Lax",  path: "/", });
-    res.cookie("UserName", user.UserName, { httpOnly: false, sameSite: "Lax",  path: "/", });
+    res.cookie("UserEmail", email, {httpOnly: true,secure: true,sameSite: "Strict", path: "/"});
+    res.cookie("UserName", user.UserName, {httpOnly: true,secure: true,sameSite: "Strict", path: "/"});
     return res.status(200).json({ message: "Login successful", user });
   } catch (error) {
     console.error("❌ Error in login:", error);
