@@ -251,8 +251,7 @@ app.post("/login", async (req, res) => {
     // Optional: log login history if needed
     //const NewUserLogin = new Login({ UserName: user.UserName, Email: user.Email,Password:user.Password });
     //await NewUserLogin.save();
-    res.cookie("UserEmail", email, {httpOnly: true,secure: true,sameSite: "None",maxAge: 7 * 24 * 60 * 60 * 1000, path: "/"});
-    res.cookie("UserName", name, {httpOnly: true,secure: true,sameSite: "None",maxAge: 7 * 24 * 60 * 60 * 1000, path: "/"});
+    
     return res.status(200).json({ message: "Login successful", user });
   } catch (error) {
     console.error("❌ Error in login:", error);
