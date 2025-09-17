@@ -13,10 +13,24 @@ app.use(cookieParser());
 const dotenv =require("dotenv");
 dotenv.config();
 
-    app.use(cors({
-      origin: "https://fbuildmypc.onrender.com", 
-      credentials: true               
-    }));
+const allowedOrigins = [
+  "http://localhost:3000",     // local React
+  "https://fbuildmypc.onrender.com"  // live deployed React
+];
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    credentials: true,
+  })
+);
+
 
 const PORT = process.env.PORT || 4000;
 const Product = require("./useModels/Product.js"); // Your Mongoose model
@@ -179,7 +193,7 @@ app.post("/signup", async (req, res) => {
   try {
     const { name, email, password,csrfToken } = req.body;
 
-    if(csrfToken===req.cookies.csrftoken){
+    
 
       if (!name || !email || !password) {
       return res.status(400).json({ message: "Please fill all details" });
@@ -210,10 +224,8 @@ app.post("/signup", async (req, res) => {
 
       return res.status(201).json({ message: "Signup successful", user: newUser });
         
-    }
-    else{
-      return res.status(400).json({ message: "csrf" });
-    }
+    
+
     
   } catch (error) {
     console.error("❌ Error in signup:", error);
