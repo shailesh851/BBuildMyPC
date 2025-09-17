@@ -168,7 +168,7 @@ app.get("/get-csrf", (req, res) => {
 res.cookie("csrftoken", csrfToken, {
   httpOnly: true,   // JS से accessible नहीं
   secure: true,     // सिर्फ HTTPS
-  sameSite: "Strict" // ज्यादा safe
+  sameSite: "None" // ज्यादा safe
 });
 
 
@@ -245,8 +245,8 @@ app.post("/login", async (req, res) => {
     // Optional: log login history if needed
     //const NewUserLogin = new Login({ UserName: user.UserName, Email: user.Email,Password:user.Password });
     //await NewUserLogin.save();
-    res.cookie("UserEmail", email, {httpOnly: true,secure: true,sameSite: "Strict", path: "/"});
-    res.cookie("UserName", user.UserName, {httpOnly: true,secure: true,sameSite: "Strict", path: "/"});
+    res.cookie("UserEmail", email, {httpOnly: true,secure: true,sameSite: "None", path: "/"});
+    res.cookie("UserName", user.UserName, {httpOnly: true,secure: true,sameSite: "None", path: "/"});
     return res.status(200).json({ message: "Login successful", user });
   } catch (error) {
     console.error("❌ Error in login:", error);
@@ -358,8 +358,8 @@ app.get("/logout", async (req, res) => {
   try {
 
     await Login.deleteMany({});  // ✅ सारे login records हटाएगा
-    res.clearCookie("UserName",{ httpOnly: false, sameSite: "Lax" })
-    res.clearCookie("UserEmail",{ httpOnly: false, sameSite: "Lax" })
+    res.clearCookie("UserName",{ path: "/", sameSite: "None", secure: true })
+    res.clearCookie("UserEmail",{ path: "/", sameSite: "None", secure: true })
     res.status(200).json({ message: "Logout successful" });
   } catch (err) {
     console.error("❌ Error in logout:", err);
