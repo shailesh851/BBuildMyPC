@@ -242,17 +242,46 @@ app.post("/login", async (req, res) => {
     if (!user) {
       return res.status(400).json({ message: "User not found" });
     }
+    else{
+
+      if (user.Password !== password) {
+        return res.status(400).json({ message: "Invalid credentials" });
+      }
+      else{
+          const user1 = await SignUp.findOne({ Email: req.body.email });
+          res.cookie("UserEmail", email, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "None",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+          path: "/"
+        });
+        res.cookie("UserName", user1.UserName, {
+          httpOnly: true,
+          secure: true,
+          sameSite: "None",
+          maxAge: 7 * 24 * 60 * 60 * 1000,
+          path: "/"
+        });
+
+        return res.status(200).json({ message: "Login successful", user });
+
+
+
+      }
+
+      
+    }
 
     // Check password
-    if (user.Password !== password) {
-      return res.status(400).json({ message: "Invalid credentials" });
-    }
+    
 
     // Optional: log login history if needed
     //const NewUserLogin = new Login({ UserName: user.UserName, Email: user.Email,Password:user.Password });
     //await NewUserLogin.save();
+  
+
     
-    return res.status(200).json({ message: "Login successful", user });
   } catch (error) {
     console.error("❌ Error in login:", error);
     return res.status(500).json({ message: "Server error" });
