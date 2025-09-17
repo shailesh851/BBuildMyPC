@@ -179,11 +179,11 @@ app.post("/chat", async (req, res) => {
 app.get("/get-csrf", (req, res) => {
   const csrfToken = require("crypto").randomBytes(24).toString("hex");
 
-  // cookie set करना
+
 res.cookie("csrftoken", csrfToken, {
-  httpOnly: true,   // JS से accessible नहीं
-  secure: true,     // सिर्फ HTTPS
-  sameSite: "None" // ज्यादा safe
+  httpOnly: true,  
+  secure: true,    
+  sameSite: "None" 
 });
 
 
@@ -214,8 +214,8 @@ app.post("/signup", async (req, res) => {
       });
 
       await newUser.save();
-      res.cookie("UserEmail", email, {httpOnly: true,secure: true,sameSite: "None", path: "/"});
-      res.cookie("UserName", name, {httpOnly: true,secure: true,sameSite: "None", path: "/"});
+      res.cookie("UserEmail", email, {httpOnly: true,secure: true,sameSite: "None",maxAge: 7 * 24 * 60 * 60 * 1000, path: "/"});
+      res.cookie("UserName", name, {httpOnly: true,secure: true,sameSite: "None",maxAge: 7 * 24 * 60 * 60 * 1000, path: "/"});
       return res.status(201).json({ message: "Signup successful", user: newUser });
         
     
@@ -251,8 +251,8 @@ app.post("/login", async (req, res) => {
     // Optional: log login history if needed
     //const NewUserLogin = new Login({ UserName: user.UserName, Email: user.Email,Password:user.Password });
     //await NewUserLogin.save();
-    res.cookie("UserEmail", email, {httpOnly: true,secure: true,sameSite: "None", path: "/"});
-    res.cookie("UserName", user.UserName, {httpOnly: true,secure: true,sameSite: "None", path: "/"});
+    res.cookie("UserEmail", email, {httpOnly: true,secure: true,sameSite: "None",maxAge: 7 * 24 * 60 * 60 * 1000, path: "/"});
+    res.cookie("UserName", user.UserName, {httpOnly: true,secure: true,sameSite: "None",maxAge: 7 * 24 * 60 * 60 * 1000, path: "/"});
     return res.status(200).json({ message: "Login successful", user });
   } catch (error) {
     console.error("❌ Error in login:", error);
