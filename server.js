@@ -498,39 +498,7 @@ app.get("/prepareHistory", async (req, res) => {
   }
 });
 
-app.post("/createLoginCookie", async (req, res) => {
-  try {
-    const { name, email } = req.body;
 
-    if (!name || !email) {
-      return res.status(400).json({ message: "Name and Email are required" });
-    }
-
-    // Set cookies
-    res.cookie("UserEmail", email, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "None",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: "/"
-    });
-
-    res.cookie("UserName", name, {
-      httpOnly: true,
-      secure: true,
-      sameSite: "None",
-      maxAge: 7 * 24 * 60 * 60 * 1000,
-      path: "/"
-    });
-
-    // ✅ Send response back
-    return res.status(200).json({ message: "Cookies created successfully" });
-
-  } catch (error) {
-    console.error("❌ Error in createLoginCookie:", error);
-    return res.status(500).json({ message: "Server error" });
-  }
-});
 
 
 app.listen(PORT, () => {
