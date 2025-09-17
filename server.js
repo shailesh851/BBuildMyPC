@@ -3,13 +3,21 @@
 
 const axios = require("axios");
 const exp = require("express");
+const cookieParser = require("cookie-parser");
+const crypto = require("crypto");
 const app = exp();
 const cors = require("cors");
 app.use(exp.json());
+app.use(cookieParser());
+
 const dotenv =require("dotenv");
 dotenv.config();
-// Enable CORS so React (different port) can access this API
-app.use(cors());
+
+app.use(cors({
+  origin: "http://localhost:3000", 
+  credentials: true               
+}));
+
 const PORT = process.env.PORT || 4000;
 const Product = require("./useModels/Product.js"); // Your Mongoose model
 const selectedProducts = require("./useModels/selectedProducts.js"); // Your Mongoose model
@@ -99,7 +107,6 @@ app.delete("/removeCart", async (req, res) => {
     if (!_id) {
       return res.status(400).json({ error: "Product ID required" });
     }
-
     const result = await CartProduct.deleteOne({ _id: _id });
 
     if (result.deletedCount > 0) {
@@ -154,39 +161,59 @@ app.post("/chat", async (req, res) => {
     res.status(500).json({ error: error.response?.data || error.message });
   }
 });
+app.get("/get-csrf", (req, res) => {
+  const csrfToken = require("crypto").randomBytes(24).toString("hex");
+
+  // cookie set करना
+  res.cookie("csrftoken", csrfToken, {
+    httpOnly: false, // React frontend को access चाहिए
+    secure: false,   // HTTPS में true
+    sameSite: "Lax"
+  });
+
+  res.json({ csrfToken });
+});
 
 app.post("/signup", async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { name, email, password,csrfToken } = req.body;
 
-    if (!name || !email || !password) {
+    if(csrfToken===req.cookies.csrftoken){
+
+      if (!name || !email || !password) {
       return res.status(400).json({ message: "Please fill all details" });
+      }
+
+      // Check if user already exists
+      const existingUser = await SignUp.findOne({ Email: email });
+      if (existingUser) {
+        return res.status(400).json({ message: "User already registered" });
+      }
+
+      // Insert new user
+      const newUser = new SignUp({
+        UserName: name,
+        Email: email,
+        Password: password,
+      });
+
+      await newUser.save();
+
+      const newUser1 = new Login({
+        UserName: name,
+        Email: email,
+        Password: password,
+      });
+
+      await newUser1.save();
+
+      return res.status(201).json({ message: "Signup successful", user: newUser });
+        
     }
-
-    // Check if user already exists
-    const existingUser = await SignUp.findOne({ Email: email });
-    if (existingUser) {
-      return res.status(400).json({ message: "User already registered" });
+    else{
+      return res.status(400).json({ message: "csrf" });
     }
-
-    // Insert new user
-    const newUser = new SignUp({
-      UserName: name,
-      Email: email,
-      Password: password,
-    });
-
-    await newUser.save();
-
-    const newUser1 = new Login({
-      UserName: name,
-      Email: email,
-      Password: password,
-    });
-
-    await newUser1.save();
-
-    return res.status(201).json({ message: "Signup successful", user: newUser });
+    
   } catch (error) {
     console.error("❌ Error in signup:", error);
     return res.status(500).json({ message: "Server error" });
@@ -197,6 +224,7 @@ app.post("/signup", async (req, res) => {
 app.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
+
 
     if (!email || !password) {
       return res.status(400).json({ message: "Please fill all details" });
@@ -214,9 +242,10 @@ app.post("/login", async (req, res) => {
     }
 
     // Optional: log login history if needed
-    const NewUserLogin = new Login({ UserName: user.UserName, Email: user.Email,Password:user.Password });
-    await NewUserLogin.save();
-
+    //const NewUserLogin = new Login({ UserName: user.UserName, Email: user.Email,Password:user.Password });
+    //await NewUserLogin.save();
+    res.cookie("UserEmail", email, { httpOnly: false, sameSite: "Lax",  path: "/", });
+    res.cookie("UserName", user.UserName, { httpOnly: false, sameSite: "Lax",  path: "/", });
     return res.status(200).json({ message: "Login successful", user });
   } catch (error) {
     console.error("❌ Error in login:", error);
@@ -227,23 +256,16 @@ app.post("/login", async (req, res) => {
 app.get("/logincheck", async (req, res) => {
   try {
     // ✅ Find the currently logged in user
-    const loggedUser = await Login.findOne(); // You can also use session/email from req if available
-
-    if (!loggedUser) {
-      return res.json({login:"exist", status: false, redirect: "/signup" });
+    //const loggedUser = await Login.findOne(); // You can also use session/email from req if available
+    console.log(req.cookies.UserName)
+    if (!req.cookies.UserName) {
+      return res.json({login:"notexist", status: false, redirect: "/signup" });
     }
     else{
-      return res.json({login:"notexist"})
+      return res.json({login:"exist"})
     }
 
-    // ✅ Check in SignUp DB using the same email
-    const signUpUser = await SignUp.findOne({ Email: loggedUser.Email });
 
-    if (!signUpUser) {
-      return res.json({ status: false, redirect: "/signup" });
-    }
-
-    // ✅ Check if address fields are filled
     const hasAddress =
       signUpUser.City && signUpUser.State && signUpUser.Pincode && signUpUser.Phone;
 
@@ -269,19 +291,13 @@ app.get("/logincheck", async (req, res) => {
 
 app.get("/logincheckProfile", async (req, res) => {
   
-    // ✅ Find the currently logged in user
-    const loggedUser = await Login.findOne(); // You can also use session/email from req if available
-
+    
+    const loggedUser = req.cookies.UserEmail
     if (loggedUser) {
       return res.json({login:"exist"});
     }
   
 
-
-   
-
-    // ✅ Check if address fields are filled
-   
 });
 
 
@@ -294,12 +310,12 @@ app.post("/addressSave", async (req, res) => {
       return res.json({message: "Fill all address filed" });
     }
     // 🔹 Find the logged-in user in Login collection
-    const user = await Login.findOne()
+   
     
 
 
     const updatedProduct = await SignUp.findOneAndUpdate(
-      { Email: user.Email },        // search by type
+      { Email: req.cookies.UserEmail},        // search by type
       {
         City:city,
         State:state,
@@ -319,12 +335,13 @@ app.post("/addressSave", async (req, res) => {
 
 app.get("/fatchProfileDetails", async (req, res) => {
   try {
-    const user = await Login.findOne(); // latest logged in user
-    if (!user) {
+
+    const email = req.cookies.UserEmail // latest logged in user
+    if (!email) {
       return res.status(400).json({ message: "No user logged in" });
     }
 
-    const userDetails = await SignUp.findOne({ Email: user.Email });
+    const userDetails = await SignUp.findOne({ Email: email });
     if (!userDetails) {
       return res.status(404).json({ message: "User details not found" });
     }
@@ -338,7 +355,10 @@ app.get("/fatchProfileDetails", async (req, res) => {
 
 app.get("/logout", async (req, res) => {
   try {
+
     await Login.deleteMany({});  // ✅ सारे login records हटाएगा
+    res.clearCookie("UserName",{ httpOnly: false, sameSite: "Lax" })
+    res.clearCookie("UserEmail",{ httpOnly: false, sameSite: "Lax" })
     res.status(200).json({ message: "Logout successful" });
   } catch (err) {
     console.error("❌ Error in logout:", err);
@@ -348,9 +368,9 @@ app.get("/logout", async (req, res) => {
 
 app.post("/profileImage",async(req,res)=>{
   const {url}=req.body
-  const userLog= await Login.findOne()
+  const email=req.cookies.UserEmail
   const updatedProduct = await SignUp.findOneAndUpdate(
-      { Email: userLog.Email },        // search by type
+      { Email: email },        // search by type
       {
         ImageURL:url
       },              // new data to replace with
@@ -361,14 +381,15 @@ app.post("/profileImage",async(req,res)=>{
 })
 
   app.post("/loginProductsManage", async (req, res) => {
-  
+
       // 1. Get logged in user (assuming only one is logged in at a time)
-      const LoginUser = await Login.findOne();
-      if (!LoginUser) {
+      const email = req.cookies.UserEmail
+    console.log(req.cookies.UserEmail+"Sssstttttttttttttt")
+      if (!email) {
         return res.status(404).json({ error: "No logged in user found" });
       }
 
-      const email = LoginUser.Email; // ✅ fix: no need to destructure
+
 
       // 2. Delete all previous products for this user
       await LoginUserProducts.deleteMany({ Email: email });
@@ -400,6 +421,7 @@ app.post("/profileImage",async(req,res)=>{
 
       // 5. Insert new combined data
       const allProducts = [...formattedSelected, ...formattedCart];
+
       await LoginUserProducts.insertMany(allProducts);
 
       return res.json({
@@ -414,12 +436,11 @@ app.post("/profileImage",async(req,res)=>{
 app.get("/prepareHistory", async (req, res) => {
   try {
     // 1. Find the logged-in user
-    const LoginUser = await Login.findOne();
-    if (!LoginUser) {
+    const email = req.cookies.UserEmail
+    if (!email) {
       return res.status(404).json({ error: "No logged in user found" });
     }
 
-    const email = LoginUser.Email;
 
     // 2. Get this user's saved products from LoginUserProducts
     const userProducts = await LoginUserProducts.find({ Email: email });
