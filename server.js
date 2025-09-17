@@ -214,8 +214,8 @@ app.post("/signup", async (req, res) => {
       });
 
       await newUser.save();
-    res.cookie("UserEmail", email, {httpOnly: true,secure: true,sameSite: "None", path: "/"});
-    res.cookie("UserName", user.UserName, {httpOnly: true,secure: true,sameSite: "None", path: "/"});
+      res.cookie("UserEmail", email, {httpOnly: true,secure: true,sameSite: "None", path: "/"});
+      res.cookie("UserName", name, {httpOnly: true,secure: true,sameSite: "None", path: "/"});
       return res.status(201).json({ message: "Signup successful", user: newUser });
         
     
