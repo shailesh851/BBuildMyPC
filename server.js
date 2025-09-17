@@ -230,7 +230,7 @@ app.post("/signup", async (req, res) => {
 // Login
 app.post("/login", async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const {name, email, password } = req.body;
 
 
     if (!email || !password) {
@@ -252,7 +252,7 @@ app.post("/login", async (req, res) => {
     //const NewUserLogin = new Login({ UserName: user.UserName, Email: user.Email,Password:user.Password });
     //await NewUserLogin.save();
     res.cookie("UserEmail", email, {httpOnly: true,secure: true,sameSite: "None",maxAge: 7 * 24 * 60 * 60 * 1000, path: "/"});
-    res.cookie("UserName", user.UserName, {httpOnly: true,secure: true,sameSite: "None",maxAge: 7 * 24 * 60 * 60 * 1000, path: "/"});
+    res.cookie("UserName", name, {httpOnly: true,secure: true,sameSite: "None",maxAge: 7 * 24 * 60 * 60 * 1000, path: "/"});
     return res.status(200).json({ message: "Login successful", user });
   } catch (error) {
     console.error("❌ Error in login:", error);
