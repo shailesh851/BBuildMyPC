@@ -230,7 +230,7 @@ app.post("/signup", async (req, res) => {
 // Login
 app.post("/login", async (req, res) => {
   try {
-    const {name, email, password } = req.body;
+    const {email, password } = req.body;
 
 
     if (!email || !password) {
